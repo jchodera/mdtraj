@@ -201,6 +201,10 @@ def mol2_to_dataframes(filename):
         csv.seek(0)
         bonds_frame = pd.read_table(csv, names=["bond_id", "id0", "id1", "bond_type"],
             index_col=0, header=None, sep="\s+", engine='python')
+        # The bond_type column must be string type, since it can contain `ar` and `am`
+        # read_table() will fail to perceive string type if the molecule does not have those bond types,
+        # and matching of bond type will fail
+        bonds_frame['bond_type'] = bonds_frame['bond_type'].astype(str)
     else:
         bonds_frame = None
 
@@ -211,7 +215,7 @@ def mol2_to_dataframes(filename):
     ncols = atoms_frame.shape[1]
     names=["serial", "name", "x", "y", "z", "atype", "code", "resName", "charge", "status"]
     atoms_frame.columns = names[:ncols]
-    
+
     return atoms_frame, bonds_frame
 
 

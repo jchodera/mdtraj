@@ -32,6 +32,26 @@ import scipy.sparse
 import pytest
 
 
+def test_load_mol2_nonaromatic(get_fn):
+    trj = md.load(get_fn('ethanol.mol2'))
+    ref_trj = md.load(get_fn('ethanol.pdb'))
+    eq(trj.xyz, ref_trj.xyz)
+
+    ref_top, ref_bonds = ref_trj.top.to_dataframe()
+    top, bonds = trj.top.to_dataframe()
+    # PDB Does not have bond order, ensure that the equality fails
+    try:
+        eq(bonds, ref_bonds)
+    except AssertionError:
+        # This is what we wanted to happen, its fine
+        pass
+    else:
+        raise AssertionError("Reference bonds with no bond order should not equal Mol2 bonds with bond order")
+    # Strip bond order info since PDB does not have it
+    bonds[:, -2:] = np.zeros([bonds.shape[0], 2])
+    eq(bonds, ref_bonds)
+
+
 def test_load_mol2(get_fn):
     trj = md.load(get_fn('imatinib.mol2'))
     ref_trj = md.load(get_fn('imatinib.pdb'))
@@ -148,7 +168,7 @@ def test_mol2_element_name(get_fn):
     top, bonds = trj.top.to_dataframe()
     assert top.iloc[0]['element'] == 'Cl'
 
-    
+
 @pytest.mark.parametrize('mol2_file', [('li.mol2'),
 ('lysozyme-ligand-tripos.mol2'), ('imatinib.mol2'),
 ('status-bits.mol2'),('adp.mol2')])
